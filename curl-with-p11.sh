@@ -66,11 +66,76 @@ gnutls-serv --x509certfile=$TESTDIR/server/server.crt \
 export SERVERPID=$!
 
 # Try to connect using curl
-curl --key "pkcs11:token=test;object=test;type=private;pin-value=1234" \
+
+# Using PKCS#11 URI for key and certificate
+../curl/src/curl --key "pkcs11:token=test;object=test;type=private;pin-value=1234" \
     -E "pkcs11:token=test;object=test;type=cert" \
     --cacert "$TESTDIR/ca/ca.crt" \
     --output "$TESTDIR/out" https://localhost:5556
 RV=$?
+
+if [ $RV != 0 ];
+then
+    echo curl returned $RV trying PKCS#11 URI for key and cert
+    kill $SERVERPID
+    unset TESTDIR
+    unset SERVERPID
+    unset SOFTHSM2_CONF
+    exit $RV
+fi
+
+# Using PEM file for key and PKCS#11 URI for certificate
+../curl/src/curl --key "$TESTDIR/client/client.key" \
+    -E "pkcs11:token=test;object=test;type=cert" \
+    --cacert "$TESTDIR/ca/ca.crt" \
+    --output "$TESTDIR/out" https://localhost:5556
+RV=$?
+
+if [ $RV != 0 ];
+then
+    echo curl returned $RV trying PEM key and PKCS#11 URI for cert
+    kill $SERVERPID
+    unset TESTDIR
+    unset SERVERPID
+    unset SOFTHSM2_CONF
+    exit $RV
+fi
+
+# Using PEM file for key and certificate
+../curl/src/curl --key "$TESTDIR/client/client.key" \
+    -E "$TESTDIR/client/client.crt" \
+    --cacert "$TESTDIR/ca/ca.crt" \
+    --output "$TESTDIR/out" https://localhost:5556
+RV=$?
+
+if [ $RV != 0 ];
+then
+    echo curl returned $RV trying PEM key and cert
+    kill $SERVERPID
+    unset TESTDIR
+    unset SERVERPID
+    unset SOFTHSM2_CONF
+    exit $RV
+fi
+
+# Using PKCS#11 URI for key and PEM file for certificate
+../curl/src/curl \
+    --key "pkcs11:token=test;object=test;type=private;pin-value=1234" \
+    -E "$TESTDIR/client/client.crt" \
+    --cacert "$TESTDIR/ca/ca.crt" \
+    --output "$TESTDIR/out" https://localhost:5556
+RV=$?
+
+if [ $RV != 0 ];
+then
+    echo curl returned $RV trying PKCS#11 URI for key and PEM cert
+    kill $SERVERPID
+    unset TESTDIR
+    unset SERVERPID
+    unset SOFTHSM2_CONF
+    exit $RV
+fi
+
 
 # Cleanup
 rm -rf $TESTDIR
