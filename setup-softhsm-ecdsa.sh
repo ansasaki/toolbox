@@ -54,6 +54,10 @@ EOF
         -out "$TESTDIR/server/server.crt" -CAserial "$TESTDIR/ca/ca.srl" \
         -CAcreateserial
 
+    # Extract public key from the certificate
+    openssl x509 -pubkey -noout -in "$TESTDIR/server/server.crt" \
+        > "$TESTDIR/server/server.pub"
+
     # Generate client keypair
     openssl ecparam -name secp521r1 -genkey -param_enc named_curve -out \
         "$TESTDIR/client/client.key"
@@ -68,6 +72,10 @@ EOF
         -out "$TESTDIR/client/client.crt" -CAserial "$TESTDIR/ca/ca.srl" \
         -extensions usr_cert
 
+    # Extract public key from the certificate
+    openssl x509 -pubkey -noout -in "$TESTDIR/client/client.crt" \
+        > "$TESTDIR/client/client.pub"
+
     # Import key and certificate to the token
 #    p11tool --provider /usr/lib64/pkcs11/libsofthsm2.so --write \
 #        --load-privkey "$TESTDIR/client/client.key" --label test \
@@ -75,8 +83,15 @@ EOF
 #    p11tool --provider /usr/lib64/pkcs11/libsofthsm2.so --write \
 #        --load-certificate "$TESTDIR/client/client.crt" --label test \
 #        --login --set-pin=1234
+#    p11tool --provider /usr/lib64/pkcs11/libsofthsm2.so --write \
+#        --load-pubkey "$TESTDIR/server/client.pub" --label test \
+#        --login --set-pin=1234 "pkcs11:token=softhsm"
+
     p11tool --provider /usr/lib64/pkcs11/libsofthsm2.so --write \
         --load-privkey "$TESTDIR/server/server.key" --label test \
+        --login --set-pin=1234 "pkcs11:token=softhsm"
+    p11tool --provider /usr/lib64/pkcs11/libsofthsm2.so --write \
+        --load-pubkey "$TESTDIR/server/server.pub" --label test \
         --login --set-pin=1234 "pkcs11:token=softhsm"
     p11tool --provider /usr/lib64/pkcs11/libsofthsm2.so --write \
         --load-certificate "$TESTDIR/server/server.crt" --label test \
