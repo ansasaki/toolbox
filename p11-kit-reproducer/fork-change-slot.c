@@ -49,7 +49,7 @@ static int do_wait(pid_t pids[], int num)
     for (i = 0; i < num; i++) {
         waitpid(pids[i], &status, 0);
         if (WIFEXITED(status)) {
-            printf("child %d exited with status %d\n", pids[i], WEXITSTATUS(status));
+            fprintf(stderr, "child %d exited with status %d\n", pids[i], WEXITSTATUS(status));
             return (WEXITSTATUS(status));
         }
         if (WIFSIGNALED(status)) {
@@ -98,8 +98,6 @@ static int spawn_processes(int num)
                 free(pids);
                 exit(5);
             case 0: /* child */
-                printf("Remove or add a device to try to cause an error\n");
-                printf("Waiting for signal SIGUSR1\n");
                 sigprocmask(SIG_BLOCK, &set, &oldset);
                 sigwait(&set, &signal);
                 sigprocmask(SIG_SETMASK, &oldset, NULL);
@@ -107,7 +105,10 @@ static int spawn_processes(int num)
                 return 0;
             default: /* parent */
                 pids[i] = pid;
-                printf("spawned %d\n", pid);
+                printf("Child process: %d\n", pid);
+                printf("Remove or add a device to try to cause an error\n");
+                printf("Waiting for signal SIGUSR1\n");
+                printf("Send SIGUSR1 to continue (e.g. kill -USR1 %d)\n", pid);
         }
     }
 
